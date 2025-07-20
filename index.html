@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>MQTT.js Retained Message Viewer</title>
+  </head>
+  <body>
+    <h2>MQTT Topic: <code>myTopic/led1</code></h2>
+    <p>Last retained message: <span id="output1">Waiting...</span></p>
+    <input type="button" onclick="OnOff('myTopic/led1')" id="myTopic/led1" value="" />
+    <br /><br />
+
+    <h2>MQTT Topic: <code>myTopic/led2</code></h2>
+    <p>Last retained message: <span id="output2">Waiting...</span></p>
+    <input type="button" onclick="OnOff('myTopic/led2')" id="myTopic/led2" value="" />
+    <br /><br />
+
+    <h2>MQTT Topic: <code>myTopic/led3</code></h2>
+    <p>Last retained message: <span id="output3">Waiting...</span></p>
+    <input type="button" onclick="OnOff('myTopic/led3')" id="myTopic/led3" value="" />
+    <br /><br />
+
+    <h2>MQTT Topic: <code>myTopic/led4</code></h2>
+    <p>Last retained message: <span id="output4">Waiting...</span></p>
+    <input type="button" onclick="OnOff('myTopic/led4')" id="myTopic/led4" value="" />
+
+    <!-- ✅ Load MQTT.js from Cloudflare CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.13.3/mqtt.min.js"></script>
+
+    <script>
+      debugger;
+      const client = mqtt.connect("wss://test.mosquitto.org:8081");
+
+      const topicElementMap = {
+        "myTopic/led1": "output1",
+        "myTopic/led2": "output2",
+        "myTopic/led3": "output3",
+        "myTopic/led4": "output4",
+      };
+
+      const topicMapping = [
+        {
+          topic: "myTopic/led1",
+          elementId: "output1",
+          state: null,
+        },
+        {
+          topic: "myTopic/led2",
+          elementId: "output2",
+          state: null,
+        },
+        {
+          topic: "myTopic/led3",
+          elementId: "output3",
+          state: null,
+        },
+        {
+          topic: "myTopic/led4",
+          elementId: "output4",
+          state: null,
+        },
+      ];
+
+      //const topics = Object.keys(topicElementMap);
+      const topics = topicMapping.map((item) => item.topic);
+
+      client.on("connect", () => {
+        debugger;
+        console.log("Connected to broker");
+        client.subscribe(topics, (err, granted) => {
+          if (err) {
+            console.error("Subscribe error:", err);
+          } else {
+            console.log(granted.map((g) => g.topic).join(", "));
+          }
+        });
+      });
+
+      //client.on("message", (topic, message) => {
+      //  debugger;
+      //  const elementId = topicElementMap[topic];
+      //  const element = document.getElementById(elementId);
+      //  if (element) {
+      //    var res = message.toString();
+      //    element.textContent = `Message from ${topic}: ${message.toString()}`;
+      //  }
+      //});
+
+      client.on("message", (topic, message) => {
+        debugger;
+        const item = topicMapping.find((t) => t.topic === topic);
+        if (item) {
+          item.state = parseInt(message.toString());
+          document.getElementById(item.elementId).textContent = item.state;
+          document.getElementById(item.topic).value = item.state == 0 ? "On" : "Off";
+        }
+      });
+
+      client.on("error", (err) => {
+        console.error("Connection error:", err);
+      });
+
+      client.on("close", () => {
+        console.warn("Disconnected from broker");
+      });
+
+      //Publish
+      function OnOff(topicFromElement){
+        debugger;
+        const item = topicMapping.find((t) => t.topic === topicFromElement);
+        client.publish(topicFromElement, item.state == 0? "1" : "0", { retain: true }, (err) => {
+          if(!err){
+            debugger;
+            console.log("updated");
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
