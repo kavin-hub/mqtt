@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>MQTT.js Retained Message Viewer</title>
+</head>
+<body>
+  <h2>MQTT Topic: <code>myTopic/led1</code></h2>
+  <p>Last retained message: <span id="output">Waiting...</span></p>
+
+  <!-- ✅ Load MQTT.js from Cloudflare CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.13.3/mqtt.min.js"></script>
+
+  <script>
+    debugger;
+    // Connect to the MQTT broker using WebSocket
+    const client = mqtt.connect("wss://test.mosquitto.org:8081");
+
+    // When connected, subscribe to the topic
+    client.on("connect", () => {
+      console.log("Connected to broker");
+      client.subscribe("myTopic/led1", (err) => {
+        if (err) {
+          console.error("Subscribe error:", err);
+        } else {
+          console.log("Subscribed to myTopic/led1");
+        }
+      });
+    });
+
+    // When a message arrives, display it
+    client.on("message", (topic, message) => {
+      console.log("Message received:", message.toString());
+      document.getElementById("output").textContent = message.toString();
+    });
+
+    // Handle errors
+    client.on("error", (err) => {
+      console.error("Connection error:", err);
+    });
+
+    // Handle disconnection
+    client.on("close", () => {
+      console.warn("Disconnected from broker");
+    });
+  </script>
+</body>
+</html>
